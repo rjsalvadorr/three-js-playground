@@ -1,4 +1,21 @@
 ///////////////////////////////////////////////////////////////////////////////
+//   UTILS
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Returns a random integer between min (inclusive) and max (inclusive).
+ * The value is no lower than min (or the next integer greater than min
+ * if min isn't an integer) and no greater than max (or the next integer
+ * lower than max if max isn't an integer).
+ * Using Math.round() will give you a non-uniform distribution!
+ */
+const getRandomInt = (min, max) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 //   PREPARING RANDOM OBJECTS
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,7 +104,7 @@ let camera = new THREE.OrthographicCamera(
   1,
   2000
 );
-camera.position.set(0, 1000, 1000);
+camera.position.set(500, 500, 500);
 camera.lookAt(scene.position);
 
 let renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -110,20 +127,26 @@ let indicesToRemove = [];
 let currentMesh;
 let currentMeshProps;
 
+// Adds a new mesh every 250 milliseconds
+window.setInterval(function(){
+  currentMesh = createRandomMesh();
+  activeMeshes.push(currentMesh)
+  
+  currentMeshProps = createRandomMeshProps();
+  currentMeshProps.lifespan += renderCounter;
+  activeMeshProps.push(currentMeshProps)
+  
+  scene.add(currentMesh);
+  currentMesh.position.set(
+    getRandomInt(-300, 300),
+    getRandomInt(0, 300),
+    getRandomInt(-300, 300)
+  );
+}, 250);
+
 let render = function() {
   requestAnimationFrame(render);
   renderer.render(scene, camera);
-  
-  if(renderCounter % 8 === 0) {
-    currentMesh = createRandomMesh();
-    activeMeshes.push(currentMesh)
-    
-    currentMeshProps = createRandomMeshProps();
-    currentMeshProps.lifespan += renderCounter;
-    activeMeshProps.push(currentMeshProps)
-    
-    scene.add(currentMesh);
-  }
   
   let cMesh;
   let cMeshProps;
@@ -146,10 +169,11 @@ let render = function() {
       cMesh.translateOnAxis(_.sample(optsVectors), 3);
     }
     
-    cMesh.translateZ(-10);
+    cMesh.translateZ(10);
     
     if(cMeshProps.lifespan <= renderCounter) {
       indicesToRemove.push(i);
+      console.log(`activeMeshes.length=${activeMeshes.length}, activeMeshProps.length=${activeMeshProps.length}`);
     }
   }
   
