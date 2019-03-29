@@ -35,6 +35,7 @@ for(let colour of optsColour) {
   optsMaterial.push(new THREE.MeshLambertMaterial({
     color: colour,
     flatShading: true,
+    transparent: true,
   }));
 };
 
@@ -70,8 +71,9 @@ const createRandomMesh = () => {
   return nuMesh;
 }
 
-const createRandomMeshProps = () => {
-  const nuProps = {
+const createRandomMeshWrapper = () => {
+  const meshWrapper = {
+    mesh: createRandomMesh(),
     rotation: {
       x: _.sample(optsRotation),
       y: _.sample(optsRotation),
@@ -84,11 +86,11 @@ const createRandomMeshProps = () => {
     lifespan: _.sample([100, 150, 200, 250, 300]),
   };
 
-  if(!nuProps.isShakey && !nuProps.isSpinning && !nuProps.isRotating) {
-    nuProps.isRotating = true;
+  if(!meshWrapper.isShakey && !meshWrapper.isSpinning && !meshWrapper.isRotating) {
+    meshWrapper.isRotating = true;
   }
 
-  return nuProps;
+  return meshWrapper;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,65 +124,59 @@ scene.add(light);
 let renderCounter = 0;
 let renderLoopMax = Number.MAX_SAFE_INTEGER;
 let activeMeshes = [];
-let activeMeshProps = [];
 let indicesToRemove = [];
-let currentMesh;
 let currentMeshProps;
 
-// Adds a new mesh every 250 milliseconds
+// Adds a new mesh every 200 milliseconds
 window.setInterval(function(){
-  currentMesh = createRandomMesh();
-  activeMeshes.push(currentMesh)
   
-  currentMeshProps = createRandomMeshProps();
-  currentMeshProps.lifespan += renderCounter;
-  activeMeshProps.push(currentMeshProps)
+  currentMeshWrapper = createRandomMeshWrapper();
+  currentMeshWrapper.lifespan += renderCounter;
+  activeMeshes.push(currentMeshWrapper)
   
-  scene.add(currentMesh);
-  currentMesh.position.set(
+  scene.add(currentMeshWrapper.mesh);
+  currentMeshWrapper.mesh.position.set(
     getRandomInt(-300, 300),
     getRandomInt(0, 300),
     getRandomInt(-300, 300)
   );
-}, 250);
+}, 200);
 
 let render = function() {
   requestAnimationFrame(render);
   renderer.render(scene, camera);
   
   let cMesh;
-  let cMeshProps;
+  // let cMeshProps;
   
   for(let i = 0; i < activeMeshes.length; i++) {
-    cMesh = activeMeshes[i]
-    cMeshProps = activeMeshProps[i];
+    cMesh = activeMeshes[i];
     
-    if(cMeshProps.isSpinning) {
-      cMesh.rotation.x += cMeshProps.rotation.x;
-      cMesh.rotation.y += cMeshProps.rotation.y;
-      cMesh.rotation.z += cMeshProps.rotation.z;
+    if(cMesh.isSpinning) {
+      cMesh.mesh.rotation.x += cMesh.rotation.x;
+      cMesh.mesh.rotation.y += cMesh.rotation.y;
+      cMesh.mesh.rotation.z += cMesh.rotation.z;
     }
-    if(cMeshProps.isRotating) {
-      cMesh.translateX(cMeshProps.translation.x);
-      cMesh.translateY(cMeshProps.translation.y);
-      cMesh.translateZ(cMeshProps.translation.z);
+    if(cMesh.isRotating) {
+      cMesh.mesh.translateX(cMesh.translation.x);
+      cMesh.mesh.translateY(cMesh.translation.y);
+      cMesh.mesh.translateZ(cMesh.translation.z);
     }
-    if(cMeshProps.isShakey) {
-      cMesh.translateOnAxis(_.sample(optsVectors), 3);
+    if(cMesh.isShakey) {
+      cMesh.mesh.translateOnAxis(_.sample(optsVectors), 3);
     }
     
-    cMesh.translateZ(10);
+    cMesh.mesh.translateZ(10);
     
-    if(cMeshProps.lifespan <= renderCounter) {
+    if(cMesh.lifespan <= renderCounter) {
       indicesToRemove.push(i);
-      console.log(`activeMeshes.length=${activeMeshes.length}, activeMeshProps.length=${activeMeshProps.length}`);
+      console.log(`activeMeshes.length=${activeMeshes.length}`);
     }
   }
   
   for(let idx of indicesToRemove) {
-    scene.remove(scene.getObjectByName(activeMeshes[idx].name));
+    scene.remove(scene.getObjectByName(activeMeshes[idx].mesh.name));
     activeMeshes = activeMeshes.slice(0, idx).concat(activeMeshes.slice(idx + 1, activeMeshes.length));
-    activeMeshProps = activeMeshProps.slice(0, idx).concat(activeMeshProps.slice(idx + 1, activeMeshProps.length));
   }
   
   indicesToRemove = [];
