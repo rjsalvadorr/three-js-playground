@@ -30,6 +30,21 @@ const periodicFunction = (x, period, minValue, maxValue) => {
   return Math.cos(cosArg) * -amplitude + (amplitude + minValue);
 }
 
+/**
+* Returns a set of coords (x, y) tracing a circle
+* where period == time of cycle, and radius ==
+* radius of the circle. The circle is centred at (0, 0).
+*/
+const circleFunction = (input, period, radius) => {
+  const inputArg = input * Math.PI / (period / 2);
+  const yCoord = Math.sin(inputArg) * radius;
+  const xCoord = Math.cos(inputArg) * radius;
+  return {
+    x: xCoord,
+    y: yCoord,
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //   PREPARING RANDOM OBJECTS
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,6 +151,10 @@ let renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 window.document.body.appendChild(renderer.domElement);
 
+let light = new THREE.DirectionalLight('white', 1.8);
+light.position.set(200, 1000, 100);
+scene.add(light);
+
 // X axis = blue
 const lineGeometryX = new THREE.Geometry();
 lineGeometryX.vertices.push(new THREE.Vector3(-200, 0, 0));
@@ -161,9 +180,16 @@ scene.add(lineX);
 scene.add(lineY);
 scene.add(lineZ);
 
-let light = new THREE.DirectionalLight('white', 1.8);
-light.position.set(60, 100, 20);
-scene.add(light);
+const centreGeometry = new THREE.DodecahedronGeometry(40, 0);
+const centreMaterial = new THREE.MeshLambertMaterial({
+  color: 0xcccccc,
+  flatShading: true,
+  transparent: true,
+  opacity: 0.85,
+});
+const centreMesh = new THREE.Mesh(centreGeometry, centreMaterial);
+centreMesh.position.set(0, 0, 0);
+scene.add(centreMesh);
 
 ///////////////////////////////////////////////////////////////////////////////
 //   MAIN RENDER LOOP
@@ -183,41 +209,44 @@ window.setInterval(function() {
 
   scene.add(currentMeshWrapper.mesh);
   currentMeshWrapper.mesh.position.set(
-    getRandomInt(-400, 400),
-    getRandomInt(-400, 400),
-    getRandomInt(-400, 400)
+    getRandomInt(-200, 200),
+    getRandomInt(-200, 200),
+    getRandomInt(-200, 200)
   );
 }, 300);
 
-
 window.setInterval(function() {
+  const currentTime = Date.now() / 1000;
+  
+  // Update meshes
   for(let i = 0; i < activeMeshes.length; i++) {
     const cMesh = activeMeshes[i];
-    const timeSinceCreation = (Date.now() / 1000) - cMesh.timeCreated;
-
+    const timeSinceCreation = currentTime - cMesh.timeCreated;
     const period = cMesh.opacityPeriod;
-    cMesh.mesh.material.opacity = periodicFunction(timeSinceCreation, period, 0, 1);
-
+    cMesh.mesh.material.opacity = periodicFunction(timeSinceCreation, period, 0, 0.9);
     if(timeSinceCreation > cMesh.lifespan) {
-      console.log(`timeSinceCreation=${timeSinceCreation}, cMesh.lifespan=${cMesh.lifespan}, cMesh.opacityPeriod=${cMesh.opacityPeriod}, cMesh.mesh.material.opacity=${cMesh.mesh.material.opacity}`);
+      // console.log(`timeSinceCreation=${timeSinceCreation}, cMesh.lifespan=${cMesh.lifespan}, cMesh.opacityPeriod=${cMesh.opacityPeriod}, cMesh.mesh.material.opacity=${cMesh.mesh.material.opacity}`);
       indicesToRemove.push(i);
     }
   }
 
-  const cameraX = periodicFunction(Date.now() / 1000, 5, -400, 400);
-  const cameraY = periodicFunction(Date.now() / 1000, 7, -400, 400);
-  camera.position.setX(cameraX);
-  camera.position.setY(cameraY);
+  // Move camera
+  const circleCoords = circleFunction(currentTime, 24, 600);
+  const verticalCoord = periodicFunction(currentTime, 16, -200, 200);
+  camera.position.setX(circleCoords.x);
+  camera.position.setZ(circleCoords.y);
+  camera.position.setY(verticalCoord);
   camera.lookAt(scene.position);
 
+  // Delete dead meshes
   for(let idx of indicesToRemove) {
     scene.remove(scene.getObjectByName(activeMeshes[idx].mesh.name));
     activeMeshes = activeMeshes.slice(0, idx).concat(activeMeshes.slice(idx + 1, activeMeshes.length));
   }
-  
   indicesToRemove = [];
+
   console.log(`activeMeshes.length=${activeMeshes.length}`);
-}, 16.6666667);
+}, 1000 / 24);
 
 let render = function() {
   requestAnimationFrame(render);
@@ -243,7 +272,7 @@ let render = function() {
       cMesh.mesh.translateOnAxis(_.sample(optsVectors), 3);
     }
 
-    cMesh.mesh.translateZ(5);
+    cMesh.mesh.translateY(2);
   }
 
   for(let idx of indicesToRemove) {
