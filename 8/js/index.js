@@ -152,7 +152,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 window.document.body.appendChild(renderer.domElement);
 
 let light = new THREE.DirectionalLight('white', 1.8);
-light.position.set(200, 1000, 100);
+light.position.set(200, 500, 100);
 scene.add(light);
 
 // X axis = blue
@@ -180,12 +180,12 @@ scene.add(lineX);
 scene.add(lineY);
 scene.add(lineZ);
 
-const centreGeometry = new THREE.DodecahedronGeometry(40, 0);
+const centreGeometry = new THREE.DodecahedronGeometry(42, 0);
 const centreMaterial = new THREE.MeshLambertMaterial({
   color: 0xcccccc,
   flatShading: true,
   transparent: true,
-  opacity: 0.85,
+  opacity: 0.95,
 });
 const centreMesh = new THREE.Mesh(centreGeometry, centreMaterial);
 centreMesh.position.set(0, 0, 0);
@@ -231,10 +231,10 @@ window.setInterval(function() {
   }
 
   // Move camera
-  const circleCoords = circleFunction(currentTime, 24, 600);
-  const verticalCoord = periodicFunction(currentTime, 16, -200, 200);
+  const circleCoords = circleFunction(currentTime, 24, 800);
+  const verticalCoord = periodicFunction(currentTime, 16, -150, 150);
   camera.position.setX(circleCoords.x);
-  camera.position.setZ(circleCoords.y);
+  camera.position.setZ(circleCoords.y / 3);
   camera.position.setY(verticalCoord);
   camera.lookAt(scene.position);
 
