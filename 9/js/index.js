@@ -4,7 +4,7 @@
 
 const SHOW_AXIS_LINES = false;
 const NUM_MOONS = 10;
-const NUM_STARS = 200;
+const NUM_STARS = 250;
 
 ///////////////////////////////////////////////////////////////////////////////
 //   UTILS
@@ -41,7 +41,7 @@ const periodicFunction = (x, period, minValue, maxValue) => {
 /**
 * Returns a set of coords (x, y) tracing a circle
 * where period == time of cycle, and radius ==
-* radius of the circle. The circle is centred at (0, 0).
+* radius of the circle. The circle is centred at (0, 0)
 */
 const circleFunction = (input, period, radius) => {
   const inputArg = input * Math.PI / (period / 2);
@@ -50,6 +50,21 @@ const circleFunction = (input, period, radius) => {
   return {
     x: xCoord,
     y: yCoord,
+  }
+}
+
+/**
+* Returns a set of coords (x, y, z) representing a point on a sphere
+* with the given radius. The sphere is centered at (0, 0, 0)
+*/
+const getRandomSphereCoordinate = (radius) => {
+  const xyCoords = circleFunction(getRandomInt(0, 1000), 500, radius);
+  const xRadius = Math.abs(xyCoords.x);
+  const xzCoords = circleFunction(getRandomInt(0, 1000), 500, xRadius);
+  return {
+    x: xzCoords.x,
+    y: xyCoords.y,
+    z: xzCoords.y,
   }
 }
 
@@ -62,7 +77,7 @@ let camera = new THREE.PerspectiveCamera(
   45,
   window.innerWidth / window.innerHeight,
   1,
-  4000,
+  3000,
 );
 camera.lookAt(scene.position);
 
@@ -75,36 +90,15 @@ light.position.set(2, 3, 0);
 scene.add(light);
 
 if(SHOW_AXIS_LINES) {
-  // X axis = blue
-  const lineGeometryX = new THREE.Geometry();
-  lineGeometryX.vertices.push(new THREE.Vector3(-200, 0, 0));
-  lineGeometryX.vertices.push(new THREE.Vector3(200, 0, 0));
-  const lineMaterialX = new THREE.LineBasicMaterial({ color: 0x0000ff });
-  const lineX = new THREE.Line(lineGeometryX, lineMaterialX);
-
-  // Y axis = green
-  const lineGeometryY = new THREE.Geometry();
-  lineGeometryY.vertices.push(new THREE.Vector3(0, -200, 0));
-  lineGeometryY.vertices.push(new THREE.Vector3(0, 200, 0));
-  const lineMaterialY = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-  const lineY = new THREE.Line(lineGeometryY, lineMaterialY);
-
-  // Z axis = red
-  const lineGeometryZ = new THREE.Geometry();
-  lineGeometryZ.vertices.push(new THREE.Vector3(0, 0, -200));
-  lineGeometryZ.vertices.push(new THREE.Vector3(0, 0, 200));
-  const lineMaterialZ = new THREE.LineBasicMaterial({ color: 0xff0000 });
-  const lineZ = new THREE.Line(lineGeometryZ, lineMaterialZ);
-
-  scene.add(lineX);
-  scene.add(lineY);
-  scene.add(lineZ);  
+  const axesHelper = new THREE.AxesHelper(200);
+  scene.add( axesHelper ); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //   MAIN OBJECTS
 ///////////////////////////////////////////////////////////////////////////////
 
+// Creating "sun", or the object in the centre
 const centreGeometry = new THREE.IcosahedronGeometry(42, 0);
 const centreMaterial = new THREE.MeshLambertMaterial({
   color: 0xbe9b7b,
@@ -117,12 +111,7 @@ centreMesh.receiveShadow = false;
 centreMesh.position.set(0, 0, 0);
 scene.add(centreMesh);
 
-const orbitMaterial = new THREE.LineBasicMaterial({
-  color: 0x888888,
-  lights: false,
-  side: THREE.DoubleSide,
-});
-
+// Creating moons
 const moonColours = [0xCBBEB5, 0xc1d6da, 0xaf6261, 0x2196f3, 0x00ff7f, 0x50080c]
 const moons = [];
 let moonGeometry;
@@ -131,6 +120,12 @@ let moonOptions;
 let moonMesh;
 let ringGeometry;
 let ringMesh;
+
+const orbitMaterial = new THREE.LineBasicMaterial({
+  color: 0x888888,
+  lights: false,
+  side: THREE.DoubleSide,
+});
 
 for(let i = 0; i < NUM_MOONS; i++) {
   moonGeometry = new THREE.SphereGeometry(getRandomInt(4, 12));
@@ -161,6 +156,7 @@ for(let i = 0; i < NUM_MOONS; i++) {
   scene.add(ringMesh);
 }
 
+// Creating stars
 const starGeometry = new THREE.SphereGeometry(2);
 const starMaterial = new THREE.LineBasicMaterial({
   color: 0xffffff,
@@ -172,19 +168,19 @@ let starCoords;
 for(let i = 0; i < NUM_STARS; i++) {
   newStar = new THREE.Mesh(starGeometry, starMaterial);
   
-  starCoords = circleFunction(getRandomInt(0, 1000), 500, 1800);
+  starCoords = getRandomSphereCoordinate(1500);
   newStar.position.setX(starCoords.x);
-  newStar.position.setY(getRandomInt(-1000, 1000));
-  newStar.position.setZ(starCoords.y);
+  newStar.position.setY(starCoords.y);
+  newStar.position.setZ(starCoords.z);
 
   scene.add(newStar);
-  // console.log(newStar);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-//   MAIN RENDER LOOP
+//   MAIN RENDER/UPDATE LOOPS
 ///////////////////////////////////////////////////////////////////////////////
 
+// Update loop
 window.setInterval(function() {
   const currentTime = Date.now() / 1000;
 
@@ -203,18 +199,17 @@ window.setInterval(function() {
   
   // Move camera
   const circleCoords = circleFunction(currentTime, 24, 1000);
-  const verticalCoord = periodicFunction(currentTime, 24, -100, 200);
+  const verticalCoord = periodicFunction(currentTime, 24, -50, 200);
   camera.position.setX(circleCoords.x);
-  camera.position.setZ(circleCoords.y / 1.1);
+  camera.position.setZ(circleCoords.y / 1.2);
   camera.position.setY(verticalCoord);
   camera.lookAt(scene.position);
 }, 1000 / 24);
 
+// Render loop
 let render = function() {
   requestAnimationFrame(render);
   renderer.render(scene, camera);
-
-  // console.log(camera.position);
 }
 
 render();
