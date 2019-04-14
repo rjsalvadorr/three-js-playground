@@ -5,7 +5,7 @@
 const SHOW_AXIS_LINES = false;
 const NUM_STARS = 150;
 const NUM_PARTICLES = 125;
-const PLANET_RADIUS = 125;
+const PLANET_RADIUS = 25;
 
 ///////////////////////////////////////////////////////////////////////////////
 //   THREE.JS ESSENTIALS
@@ -69,7 +69,7 @@ centreMesh.position.set(0, 0, 0);
 scene.add(centreMesh);
 const centreWrapper = new RjMesh(centreMesh, 259200, {
   transforms: [
-    rjTransforms.pulse,
+    rjTransforms.pulseColour,
     rjTransforms.fadeInOut,
   ],
 })
@@ -95,7 +95,7 @@ for(let i = 0; i < NUM_PARTICLES; i++) {
     flatShading: true,
   });
   newParticleMesh = new THREE.Mesh(particleGeometry, particleMaterial);
-  particleCoords = getRandomSphereCoordinate(PLANET_RADIUS + getRandomInt(15, 30));
+  particleCoords = getRandomSphereCoordinate(PLANET_RADIUS + getRandomInt(300, 400));
   newParticleMesh.position.setX(particleCoords.x);
   newParticleMesh.position.setY(particleCoords.y);
   newParticleMesh.position.setZ(particleCoords.z);
@@ -124,6 +124,7 @@ for(let i = 0; i < NUM_PARTICLES; i++) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Update loop
+let startTime = Date.now() / 1000;
 window.setInterval(function() {
   const currentTime = Date.now() / 1000;
 
@@ -138,7 +139,14 @@ window.setInterval(function() {
   // Make particles move
   for(let particle of particles) {
     particle.applyMovements();
+    if(currentTime - startTime < 5) {
+      centreWrapper.pull(particle, 5);
+    } else {
+      centreWrapper.push(particle, 15);
+    }
   }
+
+  // console.log(particles[4]);
 
   centreWrapper.applyMovements();
 }, 1000 / 24);
