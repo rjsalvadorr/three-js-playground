@@ -5,6 +5,7 @@
 const SHOW_AXIS_LINES = false;
 const NUM_STARS = 100;
 const CAMERA_POS = new THREE.Vector3(-15, 10, -40);
+const STAR_SOURCE_POS = new THREE.Vector3(0, 5, 50);
 
 ///////////////////////////////////////////////////////////////////////////////
 //   THREE.JS ESSENTIALS
@@ -22,10 +23,8 @@ camera.lookAt (scene.position);
 
 let renderer = new THREE.WebGLRenderer ({antialias: true});
 renderer.setSize (window.innerWidth, window.innerHeight);
-const canvasWrapper = document.createElement ('div');
-canvasWrapper.className = 'canvas-wrapper';
+const canvasWrapper = document.getElementById('canvas-wrapper');
 canvasWrapper.appendChild (renderer.domElement);
-window.document.body.appendChild (canvasWrapper);
 
 let light = new THREE.DirectionalLight ('white', 0.8);
 light.position.set (2, 3, 0);
@@ -41,26 +40,25 @@ if (SHOW_AXIS_LINES) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Creating projectiles
-const shootingStars = [];
-let newShootingStarGeo;
-let newShootingStarMat;
-let newShootingStar;
+let shootingStars = [];
 
-for(let i = 0; i < NUM_STARS; i++) {
-  newShootingStarGeo = new THREE.BoxGeometry (0.1, 0.1, 3);
-  newShootingStarMat = new THREE.LineBasicMaterial ({
+const createNewShootingStar = (velocity = 3, accel = 2) => {
+  const cirlceDerp = getRandomCircleCoords(30);
+  const newShootingStarGeo = new THREE.BoxGeometry (0.1, 0.1, 6);
+  const newShootingStarMat = new THREE.LineBasicMaterial ({
     color: 0xffffff,
     lights: false,
   });
-  newShootingStar = new RjLaser(
+  const newShootingStar = new RjLaser(
     new THREE.Mesh(newShootingStarGeo, newShootingStarMat),
-    new THREE.Vector3(0, 0, 50),
-    new THREE.Vector3(getRandomInt(-20, 20), getRandomInt(-15, 15), getRandomInt(-10, 30)),
-    1,
-    2,
-  ),
-  scene.add(newShootingStar.mesh);
-  shootingStars.push(newShootingStar);
+    STAR_SOURCE_POS,
+    // new THREE.Vector3(getRandomInt(-10, 10), getRandomInt(-10, 20), getRandomInt(-10, 30)),
+    new THREE.Vector3(cirlceDerp.x, cirlceDerp.y, 0),
+    velocity,
+    accel,
+  );
+
+  return newShootingStar;
 }
 
 // Creating ships
@@ -122,6 +120,7 @@ for (let i = 0; i < NUM_SHIPS * 3; i++) {
 
 // Update loop
 let startTime = Date.now () / 1000;
+
 window.setInterval (function () {
   const currentTime = Date.now () / 1000;
 
@@ -156,10 +155,30 @@ window.setInterval (function () {
     ships[2].mesh.position.setZ (shipZCoords[2]);
   }
 
+  // managing shooting stars
   for(let shootingStar of shootingStars) {
-    shootingStar.shoot(4);
+    shootingStar.update();
   }
+  shootingStars = _.filter(shootingStars, (sstar) => {
+    return sstar.alive === true;
+  });
 }, 1000 / 24);
+
+window.setInterval (function () {
+  if(shootingStars.length < NUM_STARS) {
+    const newStarrs = [
+      createNewShootingStar(4, 2),
+      createNewShootingStar(4, 2),
+      createNewShootingStar(4, 2),
+      createNewShootingStar(4, 2),
+      createNewShootingStar(4, 2),
+    ];
+    for(sstar of newStarrs) {
+      shootingStars.push(sstar);
+      scene.add(sstar.mesh);
+    }
+  }
+}, 50);
 
 // Render loop
 let render = function () {
@@ -168,3 +187,34 @@ let render = function () {
 };
 
 render ();
+
+///////////////////////////////////////////////////////////////////////////////
+//   HANDLING WINDOW RESIZES
+///////////////////////////////////////////////////////////////////////////////
+
+function resizeRenderer() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.updateProjectionMatrix();
+};
+
+const resizeHandler = evt => {
+  resizeRenderer();
+};
+
+const delay = 100;  // Your delay here
+
+(() => {
+  let resizeTaskId = null;
+
+  window.addEventListener('resize', evt => {
+    if (resizeTaskId !== null) {
+      clearTimeout(resizeTaskId);
+    }
+
+    resizeTaskId = setTimeout(() => {
+      resizeTaskId = null;
+      resizeHandler(evt);
+    }, delay);
+  });
+})();

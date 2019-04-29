@@ -21,7 +21,7 @@ class RjMesh {
   }
 
   update() {
-    if(Date.now() / 1000 > timeExpiry) {
+    if(Date.now() / 1000 > this.timeExpiry) {
       this.alive = false;
     }
   }

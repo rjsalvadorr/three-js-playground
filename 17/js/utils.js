@@ -46,6 +46,27 @@ const circleFunction = (input, period, radius) => {
 }
 
 /**
+* Returns a set of random coords (x, y) tracing a circle
+* where period == time of cycle, and radius ==
+* radius of the circle. The circle is centred at (0, 0)
+*/
+const getRandomCircleCoords = (radius) => {
+  const input = getRandomInt(0, 500);
+  const period = 500;
+
+  const inputArg = input * Math.PI / (period / 2);
+  const yCoord = Math.sin(inputArg) * radius;
+  const xCoord = Math.cos(inputArg) * radius;
+  
+  return {
+    x: xCoord,
+    y: yCoord,
+  }
+}
+
+
+
+/**
 * Returns a set of coords (x, y, z) representing a point on a sphere
 * with the given radius. The sphere is centered at (0, 0, 0)
 */
